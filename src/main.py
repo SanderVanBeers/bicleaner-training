@@ -8,24 +8,15 @@ from multiprocessing import cpu_count
 #Step 1: Build probabilistic dictionaries
 
 def build_probabilistic_dictionaries(path_bitext, source_language, target_language):
-    #Split up the tab-separated bitext
-    subprocess.run(f'cat {path_bitext} | cut -f1 > /data/{path_bitext}.{source_language}', shell=True)
-    subprocess.run(f'cat {path_bitext} | cut -f2 > /data/{path_bitext}.{target_language}', shell=True)
+    #Split up the tab-separated bitext, tokenize and lowercase it
+    subprocess.run(f"cut -f1 {path_bitext} | /mosesdecoder/moses/scripts/tokenizer/tokenizer.perl -l {source_language} -threads {cpu_count()} -no-escape | /mosesdecoder/moses/scripts/tokenizer/lowercase.perl > /data/{path_bitext}.tok.low.{source_language}", shell=True)
+    subprocess.run(f"cut -f2 {path_bitext} | /mosesdecoder/moses/scripts/tokenizer/tokenizer.perl -l {target_language} -threads {cpu_count()} -no-escape | /mosesdecoder/moses/scripts/tokenizer/lowercase.perl > /data/{path_bitext}.tok.low.{target_language}", shell=True)
 
-    #Tokenize the source data using the moses tokenizer
-    subprocess.run(f'perl /mosesdecoder/moses/scripts/tokenizer/tokenizer.perl -l {source_language} -threads {cpu_count()} -no-escape < /data/{path_bitext}.{source_language} > /data/{path_bitext}.tok.{source_language}', shell=True)
-
-    #Tokenize the target data using the moses tokenizer
-    subprocess.run(f'perl /mosesdecoder/moses/scripts/tokenizer/tokenizer.perl -l {target_language} -threads {cpu_count()} -no-escape < /data/{path_bitext}.{target_language} > /data/{path_bitext}.tok.{target_language}', shell=True)
-
-    #lowercase the tokenized source data
-    subprocess.run(f"sed 's/[[:upper:]]*/\L&/g' < /data/{path_bitext}.tok.{source_language} > /data/{path_bitext}.tok.low.{source_language}", shell=True)
-
-    #lowercase the tokenized target data
-    subprocess.run(f"sed 's/[[:upper:]]*/\L&/g' < /data/{path_bitext}.tok.{target_language} > /data/{path_bitext}.tok.low.{target_language}", shell=True)
+    #Remove lines (and their corresponding lines), that are empty, too short, too long (80) or violate the 9-1 sentence ratio limit of GIZA++
+    subprocess.run(f"/mosesdecoder/moses/scripts/training/clean-corpus-n.perl /data/{path_bitext}.tok.low {source_language} {target_language} /data/{path_bitext}.tok.low.clean 1 80", shell=True)
 
     #train the moses model
-    subprocess.run(f"perl /mosesdecoder/moses/scripts/training/train-model.perl --alignment grow-diag-final-and --root-dir /data  --corpus /data/{path_bitext}.tok.low -e {source_language}  -f {target_language} --mgiza -mgiza-cpus={cpu_count()} --parallel --first-step 1 --last-step 4 --external-bin-dir /mgiza/mgizapp/bin/", shell=True)    
+    subprocess.run(f"/mosesdecoder/moses/scripts/training/train-model.perl --alignment grow-diag-final-and --root-dir /data  --corpus /data/{path_bitext}.tok.low.clean -e {source_language}  -f {target_language} --mgiza -mgiza-cpus={cpu_count()} --parallel --first-step 1 --last-step 4 --external-bin-dir /mgiza/mgizapp/bin/", shell=True)    
 
 #Step 2: create word frequency files
 def create_word_frequencies(path_bitext, source_language, target_language):
