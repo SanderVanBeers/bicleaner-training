@@ -11,4 +11,4 @@ do
 done
 docker run --rm -v $working_directory:/workdir:Z bicleaner/training python3 /src/main.py --input $input_file --source $source_language --target $target_language
 #Example command:
-#bash dcli.sh -i training_data.de-fr -v /home/sandervanbeers/Desktop/spooktober/testbicleanertraining -s de -t fr
+#bash dcli.sh -i training_data.de-fr -v /home/sandervanbeers/testbicleanertraining -s de -t fr
