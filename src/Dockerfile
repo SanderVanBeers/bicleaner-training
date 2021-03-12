@@ -42,11 +42,12 @@ RUN git clone https://github.com/moses-smt/mgiza.git && \
         
 ENV PATH=$PATH:/mgiza/mgizapp/bin
 
-#Install bicleaner (useful for utils)
+#Install bicleaner
 RUN git clone https://github.com/bitextor/bicleaner.git
 
 #Install Moses
-RUN wget http://www.statmt.org/moses/RELEASE-4.0/binaries/ubuntu-17.04.tgz && tar zxf ubuntu-17.04.tgz && mv ubuntu-17.04 /mosesdecoder && rm ubuntu-17.04.tgz
+#RUN wget http://www.statmt.org/moses/RELEASE-4.0/binaries/ubuntu-17.04.tgz && tar zxf ubuntu-17.04.tgz && mv ubuntu-17.04 /mosesdecoder && rm ubuntu-17.04.tgz
+RUN git clone https://github.com/SanderVanBeers/moses-smt-ubuntu1704-binaries.git
 
 #Create working environment
 RUN mkdir /data
